@@ -1,13 +1,18 @@
-# mssql-python-pyodbc
-# Python runtime with pyodbc to connect to SQL Server
+## Alan Aytbaev - EDR Base Image
+## This Dockerfile creates a container running ubuntu 16.04, ODBC Driver 17 for SQL Server (Microsoft), and GDAL 2.1.3, courtesy of the UbuntuGis Stable repository.
+
+## Base image of ubuntu 16.04 Xenial
 FROM ubuntu:16.04
 
-# apt-get and system utilities
+## Install system utility packages
+# Source: https://github.com/Microsoft/mssql-docker/tree/master/oss-drivers/pyodbc
 RUN apt-get update && apt-get install -y \
     curl apt-utils apt-transport-https debconf-utils gcc build-essential g++-5\
     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install gettext nano vim -y
 
-# adding custom MS repository
+## Install ODBC Driver 17 for SQL Server (Microsoft)
+# Source: https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-2017
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 RUN curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list > /etc/apt/sources.list.d/mssql-release.list
 
@@ -19,33 +24,16 @@ RUN apt-get update && ACCEPT_EULA=Y apt-get install -y mssql-tools
 RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 RUN /bin/bash -c "source ~/.bashrc"
 
-# python libraries
-RUN apt-get update && apt-get install -y \
-    python-pip python-dev python-setuptools \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# install necessary locales
+## Install locales
+# Source: https://github.com/Microsoft/mssql-docker/tree/master/oss-drivers/pyodbc
 RUN apt-get update && apt-get install -y locales \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
     && locale-gen
 RUN pip install --upgrade pip
 
-# install SQL Server Python SQL Server connector module - pyodbc
-RUN pip install pyodbc
-
-# install additional utilities
-RUN apt-get update && apt-get install gettext nano vim -y
-
+## Install gdal 
 RUN apt-get install -y \
 	software-properties-common libgd-dev gdal-bin
 RUN add-apt-repository -y ppa:ubuntugis/ppa
 RUN apt update
 RUN apt upgrade -y
-
-# add sample code
-RUN mkdir /sample
-ADD . /sample
-WORKDIR /sample
-
-CMD /bin/bash ./entrypoint.sh
